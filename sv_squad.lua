@@ -1,554 +1,411 @@
---[[
-    ITEM LIBRARY
-    All item definitions in one organized file.
-    In production, split these across items/food/, items/medical/, etc.
-    ============================================================
---]]
-
--- ============================================================
--- FOOD ITEMS
--- ============================================================
-
-ITEM.name         = "Ration Pack"
-ITEM.desc         = "A standard Combine-issued ration pack. Contains a measured daily caloric allocation. The label reads: 'City 45 Nutritional Unit 3-B.'"
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"  -- TODO: Replace with ration model
-ITEM.width        = 1; ITEM.height = 1
-ITEM.isContraband = false
-ITEM.hungerRestore= 40
-ITEM.thirstRestore= 10
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "hunger", self.hungerRestore, "restore")
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    HL2RP.Notify(ply, "You eat the ration pack. It tastes like compressed nutrients.", "info")
-    self:Remove()
-end
+# City 45: Under Occupation — HL2RP NutScript Schema
+## Complete Setup & Administration Guide
+### Version 1.0.0
 
 ---
 
-ITEM.name         = "Protein Bar (Synthetic)"
-ITEM.desc         = "A dense, chalky bar of synthetic protein and compressed carbohydrates. Not appetizing. Functional."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.width        = 1; ITEM.height = 1
-ITEM.hungerRestore= 25
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "hunger", self.hungerRestore, "restore")
-    self:Remove()
-end
+## TABLE OF CONTENTS
+
+1. Overview
+2. Installation
+3. Folder Structure
+4. Configuration
+5. Factions Reference
+6. Plugin Overview
+7. Item System
+8. Economy Balancing
+9. Supporter / Donor System
+10. Admin Guide
+11. Command Reference
+12. Expanding the Schema
+13. Performance Notes
+14. Balancing Notes
 
 ---
 
-ITEM.name         = "Canned Beans"
-ITEM.desc         = "A dented can of preserved beans. Pre-war brand. Expired, probably. Still edible."
-ITEM.model        = "models/props_junk/garbage_metalcan001a.mdl"
-ITEM.isContraband = false
-ITEM.hungerRestore= 30
-ITEM.thirstRestore= 5
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "hunger", self.hungerRestore, "restore")
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    self:Remove()
-end
+## 1. OVERVIEW
+
+City 45: Under Occupation is a full-featured NutScript schema for Half-Life 2 Roleplay. It is designed for serious, immersive community RP servers with long-term character development, deep faction systems, and a living-world event framework.
+
+**Core Design Pillars:**
+- Roleplay-first over action gameplay
+- Meaningful progression that takes time
+- A city that reacts to player actions (tension system)
+- Factions with purpose, restrictions, and depth
+- Fair supporter perks that don't break gameplay balance
+- Strong admin tooling for running a healthy server
 
 ---
 
-ITEM.name         = "Stale Bread"
-ITEM.desc         = "A chunk of bread that is past its prime. Still better than nothing."
-ITEM.model        = "models/props_interiors/pot001.mdl"
-ITEM.isContraband = false
-ITEM.hungerRestore= 20
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "hunger", self.hungerRestore, "restore")
-    self:Remove()
-end
+## 2. INSTALLATION
+
+### Requirements
+- Garry's Mod dedicated server
+- NutScript framework (https://github.com/rebel1324/NutScript) installed to `garrysmod/gamemodes/nutscript`
+- A compatible HL2RP map (recommended: rp_city45_v2, rp_c18_v1, or similar)
+
+### Steps
+
+1. Copy the `hl2rp/` folder into `garrysmod/gamemodes/`
+2. Rename if needed to match your intended schema folder name
+3. In `schema/meta/schema.lua`, update:
+   - `SCHEMA.steamgroup`
+   - `SCHEMA.discord`
+   - `SCHEMA.website`
+4. Copy all plugin folders from `plugins/` into your schema's plugin directory
+5. Start the server with `+gamemode nutscript +map rp_yourchosenmap`
+6. Open the config file at `schema/config/sh_config.lua` and tune values for your server
+7. Assign yourself admin via `ulx adduser <yourname> superadmin` in console
+
+### Database
+NutScript uses SQLite by default. For production servers, configure NutScript to use MySQL via its built-in MySQL module. Character data, permits, and apartments are saved through NutScript's character system plus flat-file JSON for apartments and logs.
 
 ---
 
-ITEM.name         = "Water Bottle"
-ITEM.desc         = "A clean bottle of purified water. Combine filtration stamp visible on the cap."
-ITEM.model        = "models/props_junk/garbage_plasticbottle01a.mdl"
-ITEM.isContraband = false
-ITEM.thirstRestore= 45
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    self:Remove()
-end
+## 3. FOLDER STRUCTURE
+
+```
+hl2rp/
+├── schema/
+│   ├── meta/
+│   │   └── schema.lua              # Schema identity
+│   ├── config/
+│   │   └── sh_config.lua           # ALL tunable values
+│   ├── languages/
+│   │   └── sh_language.lua         # Localizable strings
+│   ├── libs/
+│   │   └── sh_util.lua             # Shared utility library
+│   ├── factions/
+│   │   ├── sh_citizen.lua
+│   │   ├── sh_cp.lua
+│   │   ├── sh_ota.lua
+│   │   ├── sh_resistance.lua
+│   │   └── sh_other_factions.lua   # CWU, Loyalist, Vort, Smuggler, Medic, Bureau
+│   ├── items/
+│   │   └── sh_items.lua            # Full item library
+│   └── ui/
+│       ├── cl_mainhud.lua          # Main HUD
+│       └── panels/                 # Individual UI panels
+│
+├── plugins/
+│   ├── needs_system/               # Hunger/thirst/fatigue/stress
+│   ├── tension_meter/              # City tension tracking
+│   ├── permits_papers/             # Document and permit system
+│   ├── datafiles/                  # Citizen records
+│   ├── economy/                    # Credits, salaries, fines
+│   ├── apartments/                 # Housing system
+│   ├── arrests_enforcement/        # CP enforcement toolkit
+│   ├── city_events/                # Dynamic world events
+│   ├── dispatch/                   # Announcements and broadcasts
+│   ├── black_market/               # Underground economy
+│   ├── crafting/                   # Item crafting
+│   ├── cwu_labor/                  # Task board and jobs
+│   ├── radio_comms/                # Radio channels
+│   ├── chat_classes/               # /me /it /y /w etc.
+│   ├── character_creation/         # Backgrounds, traits, flaws
+│   ├── progression/                # Ranks, commendations, reputation
+│   ├── supporter_donor/            # Tier system and perks
+│   ├── admin_tools/                # Admin utilities
+│   ├── logging/                    # Audit trail
+│   ├── vortigaunt/                 # Vort abilities and flavor
+│   ├── resistance/                 # Resistance cells, sabotage
+│   ├── civilian_depth/             # Interviews, journals, rumors
+│   └── combine_systems/            # CP/OTA tactical tools
+│
+└── docs/
+    └── README.md                   # This file
+```
 
 ---
 
-ITEM.name         = "Dirty Water"
-ITEM.desc         = "Water collected from an uncertain source. Drinking it might help your thirst, but it could also make you ill."
-ITEM.model        = "models/props_junk/garbage_plasticbottle01a.mdl"
-ITEM.isContraband = false
-ITEM.thirstRestore= 35
-ITEM.illnessChance= 0.2
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    if math.random() < self.illnessChance then
-        local char = ply:GetCharacter()
-        if char then
-            local flags = char:GetVar("medicalFlags") or {}
-            flags.illness = { name = "Waterborne Infection", severity = "mild", timestamp = os.date() }
-            char:SetVar("medicalFlags", flags)
-            HL2RP.Notify(ply, "You feel nauseous. The water may have been contaminated.", "warning")
-        end
-    end
-    self:Remove()
-end
+## 4. CONFIGURATION
+
+All configuration is in `schema/config/sh_config.lua`. Key values:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `startingCredits` | 50 | Credits new characters receive |
+| `salaryInterval` | 300 | Seconds between salary payouts |
+| `needsEnabled` | true | Toggle the needs (hunger etc.) system |
+| `hungerRate` | 0.5 | Hunger drain per minute |
+| `tensionLockdownThresh` | 80 | Tension level that triggers lockdown |
+| `eventInterval` | 600 | Min seconds between random events |
+| `apartmentRent` | 20 | Credits deducted per rent cycle |
+| `permitExpiry` | 72 | Hours before permits expire |
+| `forgeryDetectChance` | 0.25 | Chance a forged doc is caught |
+| `promotionCooldown` | 86400 | Seconds between rank promotions (24h) |
+| `radioRange` | 600 | Units range for civilian radio |
+| `curfewStartHour` | 22 | Hour curfew begins |
+| `curfewEndHour` | 6 | Hour curfew ends |
 
 ---
 
-ITEM.name         = "Contraband Alcohol"
-ITEM.desc         = "Unlabeled spirits in a repurposed bottle. Possession is a citation offense. Drinking it reduces stress considerably."
-ITEM.model        = "models/props_junk/garbage_plasticbottle01a.mdl"
-ITEM.isContraband = true
-ITEM.stressReduce = 25
-ITEM.thirstRestore= 10
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "stress", self.stressReduce, "restore")
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    HL2RP.Notify(ply, "The alcohol burns as it goes down. You feel your tension ease slightly.", "info")
-    self:Remove()
-end
+## 5. FACTIONS REFERENCE
+
+| Faction | Whitelist | Pay/Cycle | Purpose |
+|---------|-----------|-----------|---------|
+| Citizen | No | 0 | Default survival faction |
+| Loyalist | No | 90 | Collaborator, informant path |
+| Civil Workers' Union | No | 60–190 | Labor, distribution, admin |
+| Civil Protection | Yes | 60–280 | Law enforcement |
+| Overwatch Transhuman Arm | Yes | 300–600 | Elite Combine military |
+| Resistance | Yes | 0 (mission-based) | Underground anti-Combine |
+| Vortigaunt | Yes | 0 | Alien spiritual/biological |
+| Black Market Operative | Yes | 0 (trade-based) | Underground economy |
+| Civil Medical Authority | No | 80–200 | Healthcare |
+| City Administration Bureau | Yes | 120–250 | Permits, housing, records |
+
+### Whitelist Process
+To whitelist a player, use:
+```
+/whitelist <player> <faction_id>
+```
+Faction IDs: `cp`, `ota`, `resistance`, `vortigaunt`, `smuggler`, `admin_bureau`
 
 ---
 
-ITEM.name         = "Premium Meal Package"
-ITEM.desc         = "A high-tier Combine nutrition allocation. Reserved for high-loyalty citizens and upper-tier workers. Significantly more palatable than standard rations."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.hungerRestore= 70
-ITEM.thirstRestore= 20
-ITEM.stressReduce = 10
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "hunger", self.hungerRestore, "restore")
-    HL2RP.Needs.Consume(ply, "thirst", self.thirstRestore, "restore")
-    HL2RP.Needs.Consume(ply, "stress", self.stressReduce, "restore")
-    self:Remove()
-end
+## 6. PLUGIN OVERVIEW
 
--- ============================================================
--- MEDICAL ITEMS
--- ============================================================
+### Needs System
+Tracks hunger, thirst, fatigue, and stress (0–100). Drain rates are configurable. At 0, HP drain begins. Client HUD shows bars with color warnings. Disable in config with `needsEnabled = false`.
 
-ITEM.name         = "Bandage"
-ITEM.desc         = "Basic cloth bandage. Stops minor bleeding. Inadequate for serious wounds."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.healAmount   = 10
-ITEM.stopsBleeding= true
-function ITEM:OnUse(ply)
-    ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + self.healAmount))
-    if ply:GetCharacter() then
-        ply:GetCharacter():SetVar("bleeding", false)
-    end
-    HL2RP.Notify(ply, "You bandage your wound.", "info")
-    self:Remove()
-end
+### Tension Meter
+Global 0–100 value tracking city volatility. Increases from crime, sabotage, and events. Decays over time. At 80: lockdown broadcasts. At 90: OTA deployment alert. Affects black market prices and event frequency.
 
----
+### Permits & Papers
+Physical item + character data system. Permits have expiry times and can be forged. `/issuepermit`, `/revokepermit`, `/inspectpapers`, `/forgepermit`.
 
-ITEM.name         = "Sterile Bandage"
-ITEM.desc         = "A properly packaged sterile dressing. Significantly reduces infection risk."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.healAmount   = 15
-ITEM.stopsBleeding= true
-ITEM.clearsInfection = true
-function ITEM:OnUse(ply)
-    ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + self.healAmount))
-    if ply:GetCharacter() then
-        ply:GetCharacter():SetVar("bleeding", false)
-        local flags = ply:GetCharacter():GetVar("medicalFlags") or {}
-        flags.minorInfection = nil
-        ply:GetCharacter():SetVar("medicalFlags", flags)
-    end
-    self:Remove()
-end
+### Datafiles
+Tiered citizen records. Citizens see limited data; CP sees enforcement records; Bureau sees everything. All reads/writes are logged. `/viewdatafile`, `/addnote`.
 
----
+### Economy
+Credits (tokens), salaries by faction rank, fines, transfers. `/pay`, `/balance`, `/fine`, `/setcredits`.
 
-ITEM.name         = "Painkillers"
-ITEM.desc         = "Standard analgesic tablets. Reduces pain, provides minor stress relief. Authorized for civilian use."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.healAmount   = 5
-ITEM.stressReduce = 15
-function ITEM:OnUse(ply)
-    ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + self.healAmount))
-    HL2RP.Needs.Consume(ply, "stress", self.stressReduce, "restore")
-    self:Remove()
-end
+### Apartments
+Assignment, rent cycles, eviction, hidden stash (with detection chance). `/assignapt`, `/evict`, `/aptinspect`.
+
+### Arrests & Enforcement
+Full CP toolkit. Detain, search, confiscate, formal arrest with timers. Warrant system and BOLO notices. `/detain`, `/release`, `/search`, `/arrest`, `/warrant`, `/charges`.
+
+### City Events
+9 scripted event types firing randomly based on tension and time. Admins can manually start/stop. Events affect dispatch, tension, and faction behavior.
+
+### Dispatch
+City-wide broadcast system with ambient announcement pool, curfew triggers, CP-only dispatch channel, and propaganda terminal support.
+
+### Black Market
+Hidden vendor system with rotating stock, reputation gates, code-phrase access, and police sting risk. Dynamic pricing affected by city tension.
+
+### Crafting
+Recipe-based system with ingredient consumption, workbench requirements, craft timers, and faction restrictions. Illegal items raise suspicion.
+
+### CWU Labor
+Task board with 11 legal and 5 illegal job types. Dynamic board refreshes every 30 minutes. Payouts scale by faction rank. `/tasklist`, `/taskaccept`, `/taskcomplete`.
+
+### Radio
+Multi-channel radio with faction-gated encrypted channels. Range checks for open channels. Dead drop note system for resistance. `/radio`, `/setchannel`, `/channels`.
+
+### Progression
+Rank advancement with commendation requirements and cooldowns. Loyalty score (compliance) and suspicion heat (resistance) tracking. Social standing system. `/promote`, `/demote`, `/commend`, `/demerit`, `/mystatus`.
+
+### Supporter/Donor
+5 tiers: Supporter, Bronze, Silver, Gold, Founder. All perks are cosmetic, QoL, or prestige. No combat advantages. Admin assigns via `/setsupporter`.
+
+### Civilian Depth
+Loyalty interview mini-system, citizen informant reporting, rumor spreading, character journal, scar/injury notes.
+
+### Vortigaunt
+Heal, Zap, Sense, and Ritual abilities with cooldowns and rank scaling. Unique speech formatting in chat. `/vheal`, `/vzap`, `/vsense`, `/vritual`.
+
+### Resistance
+Cell system, heat tracking, disguise items, sabotage objectives, safehouse designation. `/createcell`, `/recruitcell`, `/sabotage`, `/disguise`.
 
 ---
 
-ITEM.name         = "Antibiotics"
-ITEM.desc         = "A course of broad-spectrum antibiotics. Treats bacterial infection. Requires medical authorization for unrestricted use."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.requiresPermit = "medical"
-ITEM.clearsIllness = true
-function ITEM:OnUse(ply)
-    local valid = HL2RP.Permits.IsValid(ply, "medical") or HL2RP.InFaction(ply, "medic")
-    if not valid then
-        HL2RP.Notify(ply, "This medication requires a medical authorization.", "error")
-        return
-    end
-    if ply:GetCharacter() then
-        local flags = ply:GetCharacter():GetVar("medicalFlags") or {}
-        flags.illness = nil
-        flags.minorInfection = nil
-        ply:GetCharacter():SetVar("medicalFlags", flags)
-    end
-    HL2RP.Notify(ply, "You take the antibiotics. You should feel better within the day.", "success")
-    self:Remove()
-end
+## 7. ITEM SYSTEM
+
+Items are defined in `schema/items/sh_items.lua`. Key properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isContraband` | bool | Flags as illegal; causes issues if found in search |
+| `isDocument` | bool | Physical paper document |
+| `permitType` | string | Links to a permit type |
+| `hungerRestore` | number | Hunger restored on use |
+| `thirstRestore` | number | Thirst restored on use |
+| `stressReduce` | number | Stress reduced on use |
+| `healAmount` | number | HP restored on use |
+| `requiresFaction` | string | Faction ID required to use |
+| `isCosmetic` | bool | Cosmetic-only item |
+| `supporterOnly` | string | Tier required to equip |
 
 ---
 
-ITEM.name         = "Antitoxin"
-ITEM.desc         = "Emergency antitoxin compound. Used in cases of environmental contamination or poisoning."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.requiresPermit = "medical"
-ITEM.healAmount   = 20
-function ITEM:OnUse(ply)
-    ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + self.healAmount))
-    if ply:GetCharacter() then
-        local flags = ply:GetCharacter():GetVar("medicalFlags") or {}
-        flags.poisoning = nil
-        flags.contamination = nil
-        ply:GetCharacter():SetVar("medicalFlags", flags)
-    end
-    self:Remove()
-end
+## 8. ECONOMY BALANCING
+
+**Starting state:** Citizens have Ȼ50. Ration packs cost ~Ȼ15 on the black market.
+
+**Salary scale:**
+- Citizen: Ȼ0 (tasks only)
+- CWU Worker: Ȼ50/cycle
+- CP Recruit: Ȼ60/cycle
+- CP Grid Leader: Ȼ280/cycle
+- OTA Commander: Ȼ600/cycle
+
+**Balancing tips:**
+- Keep `salaryInterval` at 300–600 seconds (5–10 min) for active servers
+- Black market markup of 1.75× means contraband costs ~1.75× base price, scaling higher with tension
+- Task payouts range from Ȼ12–150; illegal tasks pay more but risk suspicion
+- Apartments rent Ȼ20 per 48h — affordable for employed citizens, tight for unemployed
 
 ---
 
-ITEM.name         = "Stim Injector"
-ITEM.desc         = "A pre-loaded adrenaline injector. Rapidly eliminates fatigue. Reserved for emergency use. Crash follows."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = true   -- Unauthorized use is contraband
-ITEM.fatigueDrain = 80
-function ITEM:OnUse(ply)
-    HL2RP.Needs.Consume(ply, "fatigue", self.fatigueDrain, "restore")
-    -- Crash: stress spikes after 2 minutes
-    timer.Simple(120, function()
-        if IsValid(ply) then
-            HL2RP.Needs.Consume(ply, "stress", 30, "drain")
-            HL2RP.Notify(ply, "The stimulant is wearing off. Your body crashes.", "warning")
-        end
-    end)
-    HL2RP.Notify(ply, "Adrenaline floods your system. Fatigue vanishes briefly.", "info")
-    self:Remove()
-end
+## 9. SUPPORTER / DONOR SYSTEM
+
+### Tier Assignment
+```
+/setsupporter <player> <tier>
+```
+Tiers: `supporter`, `bronze`, `silver`, `gold`, `founder`
+
+### What Each Tier Gets
+
+| Perk | Supporter | Bronze | Silver | Gold | Founder |
+|------|-----------|--------|--------|------|---------|
+| Extra char slots | +1 | +1 | +2 | +3 | +4 |
+| OOC nameplate | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Reserved slot | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Extra storage | 0 | +3 | +5 | +8 | +10 |
+| Donor locker | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Custom graffiti | ✗ | ✓ | ✓ | ✓ | ✓ |
+| PAC+ permissions | ✗ | ✗ | ✗ | ✓ | ✓ |
+| Founder badge | ✗ | ✗ | ✗ | ✗ | ✓ |
+
+**Critical Rule:** No donor tier gives combat advantages, better weapons, or unfair RP power. All perks are cosmetic, convenience, or prestige.
 
 ---
 
-ITEM.name         = "Trauma Kit"
-ITEM.desc         = "A full trauma response kit. Restores significant health. Requires basic medical knowledge to use effectively."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.requiresPermit = "medical"
-ITEM.healAmount   = 50
-function ITEM:OnUse(ply)
-    local valid = HL2RP.Permits.IsValid(ply, "medical") or HL2RP.InFaction(ply, "medic")
-    if not valid then
-        -- Can still use but less effective without training
-        HL2RP.Notify(ply, "Without medical training, this kit is partially effective.", "warning")
-        ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + 25))
-    else
-        ply:SetHealth(math.min(ply:GetMaxHealth(), ply:Health() + self.healAmount))
-    end
-    self:Remove()
-end
+## 10. ADMIN GUIDE
+
+### Essential First Steps
+1. Assign yourself superadmin
+2. Whitelist your test accounts for factions you want to test
+3. Set tension to 0 via console: `lua_run HL2RP.Tension.current = 0`
+4. Create test apartments with `/assignapt <plyname> apt_001`
+
+### Moderation Commands
+| Command | Use |
+|---------|-----|
+| `/warn <ply> <reason>` | Issue a warning |
+| `/warnings <ply>` | View warnings |
+| `/addnoteadmin <ply> <note>` | Add private staff note |
+| `/whitelist <ply> <faction>` | Whitelist for faction |
+| `/unwhitelist <ply> <faction>` | Remove whitelist |
+| `/commend <ply> <reason>` | Issue commendation |
+| `/demerit <ply> <reason>` | Issue demerit |
+| `/promote <ply>` | Promote one rank |
+| `/demote <ply> [reason]` | Demote one rank |
+
+### Event Management
+| Command | Use |
+|---------|-----|
+| `/startevent <id>` | Manually start an event |
+| `/endevent <id>` | End an event |
+| `/listevents` | List all events |
+| `/pauseevents` | Toggle auto event scheduling |
+
+### Audit & Logs
+| Command | Use |
+|---------|-----|
+| `/adminlogs [category] [limit]` | View log buffer |
+| `/playerlogs <ply>` | View all logs for a player |
+| `/economyaudit` | View all player balances |
 
 ---
 
-ITEM.name         = "Medical Scanner"
-ITEM.desc         = "A handheld biometric scanner used by Civil Medical Authority staff to assess patient vitals."
-ITEM.model        = "models/Items/HealthKit.mdl"
-ITEM.isContraband = false
-ITEM.requiresFaction = "medic"
-function ITEM:OnUse(ply)
-    -- TODO: Open medical scanner UI to assess nearby player
-    HL2RP.Notify(ply, "Medical scanner activated. Approach a patient and use /scan <player>.", "info")
-end
+## 11. COMMAND REFERENCE (QUICK)
 
--- ============================================================
--- TOOLS
--- ============================================================
+### Citizens
+`/pay` `/balance` `/tasklist` `/taskaccept` `/taskcomplete` `/journal` `/addscar` `/rumor` `/report` `/mystatus` `/craft` `/recipes` `/radio` `/setchannel` `/dropenote` `/collectdrop`
 
-ITEM.name         = "Toolbox"
-ITEM.desc         = "A worn but functional toolbox. Required for certain repair tasks."
-ITEM.model        = "models/props_c17/toolbox01.mdl"
-ITEM.isContraband = false
-ITEM.allowedJobs  = { "repair", "maintenance" }
+### CP
+`/detain` `/release` `/search` `/arrest` `/charges` `/warrant` `/fine` `/revokepermit` `/issuepermit` `/inspectpapers` `/viewdatafile` `/addnote` `/dispatch` `/broadcast` `/startinterview` `/iq`
 
-ITEM.name         = "Handheld Radio"
-ITEM.desc         = "A civilian-model radio transceiver. Operates on standard open frequencies. Not encrypted."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.radioType    = "civilian"
-ITEM.frequency    = 0  -- Set on use
+### Resistance
+`/createcell` `/recruitcell` `/cellinfo` `/setsafehouse` `/sabotage` `/disguise` `/removedisguise` `/anon` `/dropenote` `/forgepermit`
 
-ITEM.name         = "Combine Radio"
-ITEM.desc         = "CP-issue encrypted radio transceiver. Access restricted to authorized personnel."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true  -- Illegal for civilians
-ITEM.requiresFaction = "cp"
-ITEM.radioType    = "combine"
-ITEM.encrypted    = true
+### CWU
+`/taskaccept` `/taskcomplete` `/union` `/assignapt`
 
-ITEM.name         = "Flashlight"
-ITEM.desc         = "A standard battery-powered flashlight. Essential in the lower districts."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
+### Vortigaunt
+`/vheal` `/vzap` `/vsense` `/vritual`
 
-ITEM.name         = "Zip Ties"
-ITEM.desc         = "Plastic restraints. Used by Civil Protection for detainment. Possession by civilians is suspicious."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.requiresFaction = "cp"
+### Admin/Staff
+`/warn` `/warnings` `/addnoteadmin` `/whitelist` `/unwhitelist` `/commend` `/demerit` `/promote` `/demote` `/setcredits` `/setsupporter` `/removesupporter` `/startevent` `/endevent` `/listevents` `/adminlogs` `/playerlogs` `/broadcast` `/propaganda`
 
-ITEM.name         = "Crowbar"
-ITEM.desc         = "A heavy iron pry bar. Useful for many tasks. Not technically a weapon. Technically."
-ITEM.model        = "models/weapons/w_crowbar.mdl"
-ITEM.isContraband = false
-ITEM.isWeapon     = true
-ITEM.damage       = 20
+---
 
-ITEM.name         = "Lockpick Set"
-ITEM.desc         = "A small set of picks and tension wrenches. Possession is a criminal offense. Extremely useful."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
+## 12. EXPANDING THE SCHEMA
 
-ITEM.name         = "Permit Printer"
-ITEM.desc         = "A compact thermal printer loaded with permit-grade paper. Used by Bureau and CWU staff."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "bureau"
+### Adding a New Faction
+1. Create `schema/factions/sh_yourfaction.lua`
+2. Define all FACTION.* properties
+3. Add ranks, equipment, relations
+4. Add faction ID to any relevant access lists in permits, datafiles, radio channels
 
-ITEM.name         = "Ration Stamp"
-ITEM.desc         = "A physical coupon entitling the holder to one additional ration unit at the distribution terminal."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.rationValue  = 1
+### Adding New Items
+1. Add to `schema/items/sh_items.lua` or a new category file
+2. Define: name, desc, model, isContraband, and an OnUse function
+3. If it restores needs, call `HL2RP.Needs.Consume()`
+4. If it's a permit, set `permitType`
 
--- ============================================================
--- DOCUMENTS
--- ============================================================
+### Adding New Events
+1. Add an entry to `HL2RP.Events.Definitions` in `plugins/city_events/sv/sv_events.lua`
+2. Define: `onStart`, `onEnd`, `weight`, `tensionGain`, `duration`, `requirements`
+3. Events fire automatically based on weight — no other registration needed
 
-ITEM.name         = "Citizen Identification Card"
-ITEM.desc         = "A laminated card bearing a photographic identification and CID number. Mandatory for all residents of City 45."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.isDocument   = true
+### Adding New Tasks
+1. Add to `HL2RP.Labor.LegalTasks` or `HL2RP.Labor.IllegalTasks`
+2. Set `payout`, `duration`, `category`, optional `requiredItem`, `factionBonus`
 
-ITEM.name         = "Ration Allocation Card"
-ITEM.desc         = "Tracks the holder's ration allocation status. Must be presented at distribution points."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.isDocument   = true
+### Adding New Crafting Recipes
+1. Add to `HL2RP.Crafting.Recipes` in `plugins/crafting/sv/sv_crafting.lua`
+2. Define ingredients, result, craftTime, workbench requirement, and faction restriction
 
-ITEM.name         = "Fake ID Card"
-ITEM.desc         = "A falsified identity card bearing a fabricated name and CID. High-quality forgery. Very illegal."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.isForged     = true
-ITEM.detectChance = 0.2
+### Adding a Map Integration
+1. Place `hl2rp_workbench` entities in Hammer for crafting benches
+2. Place `hl2rp_sabotage_target` entities for resistance sabotage objectives
+3. Place `hl2rp_vendor_*` entities for NPC vendors (see npcs_vendors plugin)
+4. Define apartment IDs matching your map's residential entity names
 
-ITEM.name         = "Work Permit"
-ITEM.desc         = "An official document authorizing the holder to perform assigned labor within City 45."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = false
-ITEM.isDocument   = true
-ITEM.permitType   = "work"
+---
 
-ITEM.name         = "Arrest Report Pad"
-ITEM.desc         = "A CP-issued notepad pre-formatted for incident reports. Required for formal arrest logging."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "cp"
+## 13. PERFORMANCE NOTES
 
-ITEM.name         = "Evidence Bag"
-ITEM.desc         = "A sealed evidence container used by Civil Protection to store confiscated materials."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "cp"
-ITEM.isEvidenceBag = true
+- The needs system runs every 60 seconds — minimal overhead
+- The tension meter decays every 60 seconds — minimal overhead
+- Task board refreshes every 30 minutes
+- Black market vendor restocks every hour
+- Log buffer caps at 500 entries to avoid memory growth
+- Net messages use string compression where possible
+- All server-authoritative checks prevent client abuse
+- Avoid running more than 3 concurrent events (configurable)
 
-ITEM.name         = "Wanted Notice"
-ITEM.desc         = "An official document declaring the named individual to be sought by Civil Protection."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isDocument   = true
+---
 
--- ============================================================
--- CONTRABAND
--- ============================================================
+## 14. BALANCING NOTES
 
-ITEM.name         = "Rebel Pamphlet"
-ITEM.desc         = "A crudely printed leaflet containing anti-Combine rhetoric and calls to action. Highly illegal. Dangerously persuasive."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.tensionGain  = 3
-ITEM.suspicionGain= 15
-function ITEM:OnFound(finder, owner)
-    -- Called when CP finds this during a search
-    HL2RP.Tension.Modify(finder:Name(), "crime_reported")
-    HL2RP.Datafiles.LogCrime(finder, owner:GetCharacter(), "Rebel Propaganda Possession", "moderate")
-end
+**Citizen progression to resistance is intentionally slow.** A player should spend meaningful time as a citizen before earning a resistance whitelist. This creates RP history and makes resistance players feel earned.
 
-ITEM.name         = "Encrypted Note"
-ITEM.desc         = "A small slip of paper covered in cipher text. Could be resistance communications, black market arrangements, or something else entirely."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.isEncrypted  = true
-ITEM.cipherKey    = ""  -- Set dynamically when created
+**CP should not be the default faction for new players.** CP is whitelisted and requires demonstrated understanding of the server's rules and RP standards.
 
-ITEM.name         = "Hacked Radio"
-ITEM.desc         = "A civilian radio modified to access encrypted frequencies. Illegal. Useful."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.radioType    = "hacked"
-ITEM.canScanFreqs = true
+**The tension meter creates natural ebb and flow.** Don't forcibly keep it at 0 — let it rise and fall organically. High tension makes for better RP.
 
-ITEM.name         = "Permit Forgery Kit"
-ITEM.desc         = "A collection of materials needed to replicate official permit documents. Highly illegal. Professionally made."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.durability   = 3   -- Can produce 3 forged permits before depleted
+**Black market prices should feel risky.** The 1.75× markup plus tension scaling means contraband is a luxury. Adjust `blackMarketMarkup` if your economy feels off.
 
-ITEM.name         = "Anti-Combine Graffiti Can"
-ITEM.desc         = "A spray can loaded with vivid red paint and an accompanying stencil bearing resistance imagery."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.tensionGain  = 5
-ITEM.suspicionGain= 10
+**Salary cycles matter.** If salaries feel too generous, increase the interval. If players can't afford rent, lower it or raise CWU task payouts.
 
-ITEM.name         = "Illegal Ammunition"
-ITEM.desc         = "Unlicensed ammunition rounds. Possession without a restricted goods permit is a major offense."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
+---
 
-ITEM.name         = "Rebel Mask"
-ITEM.desc         = "A cloth mask bearing resistance iconography. Wearing it during CP encounters increases suspicion considerably."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.suspicionGain= 20  -- On equip
-
-ITEM.name         = "Smuggler's Satchel"
-ITEM.desc         = "A reinforced bag with concealed compartments. Items stored inside are harder to detect in a search."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.concealBonus = 0.2  -- Reduces stash detection chance by 20%
-
--- ============================================================
--- CRAFTING MATERIALS
--- ============================================================
-
-ITEM.name         = "Metal Scrap"
-ITEM.desc         = "Salvaged metal pieces. Used in crafting makeshift tools and weapons."
-ITEM.model        = "models/props_junk/PopCan01a.mdl"
-ITEM.isCraftingMat = true
-ITEM.stackable     = true
-ITEM.maxStack      = 20
-
-ITEM.name         = "Electronic Salvage"
-ITEM.desc         = "Circuit boards and wiring salvaged from discarded Combine equipment."
-ITEM.model        = "models/props_junk/PopCan01a.mdl"
-ITEM.isCraftingMat = true
-ITEM.stackable     = true
-ITEM.maxStack      = 10
-
-ITEM.name         = "Cloth Scraps"
-ITEM.desc         = "Torn fabric pieces. Useful for crafting basic bandages and disguises."
-ITEM.model        = "models/props_junk/PopCan01a.mdl"
-ITEM.isCraftingMat = true
-ITEM.stackable     = true
-ITEM.maxStack      = 15
-
-ITEM.name         = "Chemical Reagents"
-ITEM.desc         = "A small vial of unidentified chemical compounds. Used in medication crafting."
-ITEM.model        = "models/props_junk/PopCan01a.mdl"
-ITEM.isCraftingMat = true
-ITEM.isContraband  = true  -- Unauthorized possession
-
--- ============================================================
--- SUPPORTER COSMETICS
--- ============================================================
-
-ITEM.name         = "Founder's Badge"
-ITEM.desc         = "A small enamel pin bearing the emblem of City 45's founding supporters. Rare. Recognized."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isCosmetic   = true
-ITEM.supporterOnly = "founder"
-
-ITEM.name         = "Supporter Radio Skin (Silver)"
-ITEM.desc         = "A custom housing wrap for your radio unit — sleek silver finish with subtle engravings."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isCosmetic   = true
-ITEM.supporterOnly = "silver"
-ITEM.appliesTo    = "radio"
-
-ITEM.name         = "Custom Passport Border (Gold)"
-ITEM.desc         = "A replacement passport document with an elegant gold-foil border. Cosmetic only."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isCosmetic   = true
-ITEM.supporterOnly = "gold"
-
-ITEM.name         = "Apartment Decoration Kit"
-ITEM.desc         = "A collection of small prop items approved for residential use. Makes a housing unit feel more like home."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isCosmetic   = true
-ITEM.supporterOnly = "silver"
-ITEM.aptDecoration = true
-
-ITEM.name         = "Exclusive Coat (Founders)"
-ITEM.desc         = "A well-maintained long coat bearing subtle resistance-adjacent iconography. Exclusive to server founders. Cosmetic only — carries no special RP powers."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isCosmetic   = true
-ITEM.supporterOnly = "founder"
-ITEM.isClothing   = true
-
--- ============================================================
--- COMBINE / OTA EQUIPMENT (Faction-restricted)
--- ============================================================
-
-ITEM.name         = "OTA Command Uplink"
-ITEM.desc         = "A heavy-duty tactical uplink device used by OTA commanders to interface with Overwatch network systems."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "ota"
-ITEM.isContraband = true  -- Civilians must not possess this
-
-ITEM.name         = "CP ID Card"
-ITEM.desc         = "A Civil Protection identification card embedded with unit data and sector clearance information."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "cp"
-
-ITEM.name         = "Sector Key"
-ITEM.desc         = "An encrypted access token granting entry to restricted Combine administrative sectors. Grid Leader issue."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.requiresFaction = "cp"
-ITEM.requiredRank = 6  -- Grid Leader only
-
--- ============================================================
--- RESISTANCE EQUIPMENT
--- ============================================================
-
-ITEM.name         = "Dead Drop Container"
-ITEM.desc         = "A small waterproof container used to leave messages and supplies at pre-arranged locations."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.isDeadDrop   = true
-ITEM.requiresFaction = "resistance"
-
-ITEM.name         = "Resistance Signal Jammer"
-ITEM.desc         = "A crude device that disrupts Combine scanners within a limited radius. Single-use. Extremely illegal."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.requiresFaction = "resistance"
-ITEM.jamRadius    = 300   -- Units
-ITEM.jamDuration  = 60    -- Seconds
-
-ITEM.name         = "Vort Bio-Cell"
-ITEM.desc         = "A bioluminescent cell derived from Vortigaunt energy. Can be used to power makeshift resistance devices."
-ITEM.model        = "models/Items/combine_rifle_ammo01.mdl"
-ITEM.isContraband = true
-ITEM.requiresFaction = "vortigaunt"
+*City 45: Under Occupation — Built for serious HL2RP communities.*
+*Expand freely. Credit appreciated but not required.*
